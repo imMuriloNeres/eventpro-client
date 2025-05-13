@@ -1,5 +1,6 @@
-import 'package:eventpro_app/appbars/appbarperfil.dart';
+import 'package:eventpro_app/screens/edit_profile_screen.dart';
 import 'package:eventpro_app/utils/botaopersonalizado.dart';
+import 'package:eventpro_app/utils/criarappbar.dart';
 import 'package:eventpro_app/utils/criarlisttiles.dart';
 import 'package:eventpro_app/utils/fotoperfil.dart';
 import 'package:flutter/material.dart';
@@ -17,10 +18,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: appBarPerfil(), 
+      appBar: appBarCustom(
+        title: 'Perfil',
+        centerTitle: true,
+        backgroundColor: Colors.white,
+      ),
       body: SafeArea(
         child: Container(
-          color: Colors.transparent,
+          color: Colors.white,
           width: double.infinity,
           height: double.infinity,
           child: SingleChildScrollView(
@@ -59,7 +64,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             color: Color.fromARGB(240, 0, 74, 173),
                             borderRadius: 10, // borda mais arredondada
                             onPressed: () {
-                              print('Botão editar perfil clicado!');
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => EditarPerfil()),
+                              );
                             },
                           ),
                         ]
@@ -73,7 +81,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     criarListTiles(Icons.history, 'Histórico de Eventos', (){}, iconColor: Colors.black,),
                     criarListTiles(Icons.settings, 'Configurações', (){}, iconColor: Colors.black,),
                     criarListTiles(
-                      Icons.chevron_right,
+                      Icons.logout,
                       'Sair da conta', 
                       (){
                         print("Deslogado!!!");
