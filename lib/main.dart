@@ -1,4 +1,5 @@
 import 'package:eventpro_app/core/routes/router.dart';
+import 'package:eventpro_app/core/themes/app_theme.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -13,6 +14,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp.router(
       routerConfig: router,
       debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
     );
   }
 }
