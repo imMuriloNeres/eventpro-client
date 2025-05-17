@@ -1,3 +1,4 @@
+import 'package:eventpro_app/screens/config_screen.dart';
 import 'package:eventpro_app/screens/edit_profile_screen.dart';
 import 'package:eventpro_app/utils/botaopersonalizado.dart';
 import 'package:eventpro_app/utils/criarappbar.dart';
@@ -77,9 +78,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 Column(
                   children: [
-                    criarListTiles(Icons.favorite_border, 'Favoritos', (){}, iconColor: Colors.black,),
+                    criarListTiles(Icons.favorite_border, 'Favoritos', (){showMyBottomSheet(context);} ,iconColor: Colors.black,),
                     criarListTiles(Icons.history, 'Histórico de Eventos', (){}, iconColor: Colors.black,),
-                    criarListTiles(Icons.settings, 'Configurações', (){}, iconColor: Colors.black,),
+                    criarListTiles(Icons.settings, 'Configurações', (){
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => ConfigPage()),
+                      );
+                    }, iconColor: Colors.black,),
                     criarListTiles(
                       Icons.logout,
                       'Sair da conta', 
@@ -103,3 +109,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
+
+
+void showMyBottomSheet(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true, // permite ocupar mais da tela
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) {
+      return DraggableScrollableSheet(
+        expand: false,
+        builder: (context, scrollController) {
+          return Container(
+            padding: EdgeInsets.all(20),
+            child: ListView(
+              controller: scrollController,
+              children: [
+                Text('Eventos favoritos'),
+                SizedBox(height: 20),
+                Text('Mais conteúdo...'),
+                SizedBox(height: 500), // aumenta artificialmente a altura
+              ],
+            ),
+          );
+        },
+      );
+    },
+  );
+}
