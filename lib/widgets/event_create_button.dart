@@ -14,7 +14,8 @@ class EventCreateButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton(
-      backgroundColor: const Color(0xFF004AAD),
+      backgroundColor: const Color(0xFF004AAD), // Mantém o fundo azul
+      foregroundColor: Colors.white,           // ADICIONADO: Define a cor do ícone como branco
       onPressed: () async {
         // Prevent opening modal if userId is not available for some reason.
         if (userId == null) {
