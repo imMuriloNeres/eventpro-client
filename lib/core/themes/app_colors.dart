@@ -11,4 +11,5 @@ class AppColors {
   static const redSecondary = Color(0xFFFFEDED);
   static const green = Color(0xFF4B9E1E);
   static const inputColor = Color(0xFFF2F2F2);
+  static const Color error = Color(0xFFD32F2F);
 }

@@ -5,7 +5,17 @@ import 'package:eventpro_app/controller/login_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-void main() {
+// 1. Importe a biblioteca de inicialização de data
+import 'package:intl/date_symbol_data_local.dart';
+
+// 2. Transforme a função main em assíncrona
+void main() async {
+  // 3. Garante que os widgets do Flutter sejam inicializados primeiro
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // 4. Inicializa os dados de formatação para o português do Brasil
+  await initializeDateFormatting('pt_BR', null);
+
   runApp(const MyApp());
 }
 

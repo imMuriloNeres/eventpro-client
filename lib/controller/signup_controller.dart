@@ -20,7 +20,7 @@ class SignupController extends ChangeNotifier {
     try {
       final response = await http.post(
         Uri.parse(
-          'https://pi2025-1eventpro-production.up.railway.app/api/user',
+          'https://pi2025-1eventpro-production.up.railway.app/api/auth/register',
         ),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({

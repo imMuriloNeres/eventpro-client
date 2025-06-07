@@ -13,7 +13,7 @@ class LoginController extends ChangeNotifier {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:3000/api/auth/login'),
+        Uri.parse('https://pi2025-1eventpro-production.up.railway.app/api/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'email': email,
