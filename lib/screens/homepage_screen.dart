@@ -1,13 +1,16 @@
 import 'dart:async';
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+
 import 'package:eventpro_app/core/themes/app_colors.dart';
-import 'package:provider/provider.dart'; // Import provider
-import '../controller/login_controller.dart'; // Import your controller
+import '../controller/login_controller.dart';
 import '../widgets/event_create_button.dart';
 import '../widgets/evento_card.dart';
+import '../widgets/event_details_modal.dart';
+import 'search_screen.dart'; // Importa a classe Event para o DetailsModal
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -17,10 +20,9 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<dynamic> _myEvents = [];
-  List<dynamic> _featuredEvents = [];
   List<dynamic> _recommendedEvents = [];
-  
+  List<dynamic> _featuredEvents = [];
+
   bool _isLoading = true;
   String? _error;
 
@@ -50,10 +52,8 @@ class _HomePageState extends State<HomePage> {
           setState(() {
             final allEvents = List<dynamic>.from(decodedResponse);
             allEvents.shuffle();
-
-            _myEvents = allEvents.take(5).toList();
-            _featuredEvents = allEvents.skip(5).take(5).toList();
-            _recommendedEvents = allEvents.skip(10).toList();
+            _recommendedEvents = allEvents.take(5).toList();
+            _featuredEvents = allEvents.skip(5).toList();
             _isLoading = false;
           });
         }
@@ -70,13 +70,15 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _refreshEvents() {
-    _fetchEvents();
+  // =======================================================
+  // CORREÇÃO APLICADA AQUI
+  // =======================================================
+  Future<void> _refreshEvents() async {
+    await _fetchEvents();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Get the user ID from the LoginController provided in your widget tree.
     final userId = Provider.of<LoginController>(context, listen: false).userId;
 
     return Scaffold(
@@ -88,28 +90,14 @@ class _HomePageState extends State<HomePage> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Seja bem-vindo',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            Text(
-              'Explore os próximos eventos',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-            ),
+            Text('Seja bem-vindo', style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+            Text('Explore os próximos eventos', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary)),
           ],
         ),
       ),
-      floatingActionButton: EventCreateButton(
-        userId: userId, // Pass the user ID
-        onEventCreated: _refreshEvents,
-      ),
+      floatingActionButton: EventCreateButton(userId: userId, onEventCreated: _refreshEvents),
       body: RefreshIndicator(
-        onRefresh: _fetchEvents,
+        onRefresh: _refreshEvents, // Agora a função tem a assinatura correta
         color: AppColors.bluePrimary,
         child: _buildBody(),
       ),
@@ -120,100 +108,107 @@ class _HomePageState extends State<HomePage> {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator(color: AppColors.bluePrimary));
     }
-
     if (_error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.red, fontSize: 16)),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _refreshEvents,
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.bluePrimary),
-                child: const Text('Tentar novamente', style: TextStyle(color: Colors.white)),
-              ),
-            ],
-          ),
-        ),
-      );
+      return Center(child: Padding(padding: const EdgeInsets.all(16.0), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.red, fontSize: 16)),
+        const SizedBox(height: 20),
+        ElevatedButton(onPressed: _refreshEvents, style: ElevatedButton.styleFrom(backgroundColor: AppColors.bluePrimary), child: const Text('Tentar novamente', style: TextStyle(color: Colors.white))),
+      ])));
     }
-    
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+    return CustomScrollView(
+      slivers: [
+        _buildHorizontalCarouselSection(title: 'Eventos Recomendados', events: _recommendedEvents),
+        ..._buildVerticalGridSection(title: 'Eventos em Destaque', events: _featuredEvents),
+      ],
+    );
+  }
+
+  Widget _buildHorizontalCarouselSection({required String title, required List<dynamic> events}) {
+    if (events.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+    final userId = Provider.of<LoginController>(context, listen: false).userId;
+    return SliverToBoxAdapter(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildEventSection(title: 'Meus Eventos', events: _myEvents),
-          _buildEventSection(title: 'Eventos em Destaque', events: _featuredEvents),
-          _buildEventSection(title: 'Eventos Recomendados', events: _recommendedEvents),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 16.0),
+            child: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+          ),
+          SizedBox(height: 240, child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: events.length,
+            itemBuilder: (context, index) {
+              final eventData = events[index];
+              final event = Event.fromJson(eventData as Map<String, dynamic>);
+              final cardWidth = MediaQuery.of(context).size.width * 0.7;
+              return Container(
+                width: cardWidth,
+                margin: EdgeInsets.only(right: index == events.length - 1 ? 0 : 16),
+                child: GestureDetector(
+                  onTap: () => _openDetailsModal(event, userId),
+                  child: EventoCard(title: event.name, date: _formatEventCardDate(event.schedules), imageUrl: event.imageUrl),
+                ),
+              );
+            },
+          )),
         ],
       ),
     );
   }
 
-  Widget _buildEventSection({required String title, required List<dynamic> events}) {
-    if (events.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Text(
-            title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
+  List<Widget> _buildVerticalGridSection({required String title, required List<dynamic> events}) {
+    if (events.isEmpty) return [const SliverToBoxAdapter(child: SizedBox.shrink())];
+    final userId = Provider.of<LoginController>(context, listen: false).userId;
+    return [
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16.0, 24.0, 16.0, 16.0),
+          child: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
         ),
-        const SizedBox(height: 16),
-        Container(
-          height: 240,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: events.length,
-            itemBuilder: (context, index) {
-              final event = events[index];
-              final imageUrl = event['imageUrl']?.toString() ?? 'https://picsum.photos/240/120?random=${event['id'] ?? index}';
-              final cardWidth = MediaQuery.of(context).size.width * 0.6;
-
-              return Container(
-                width: cardWidth,
-                margin: EdgeInsets.only(right: index == events.length - 1 ? 0 : 16),
-                child: EventoCard(
-                  title: event['name']?.toString() ?? 'Evento sem nome',
-                  date: _formatDate(event['date']?.toString()),
-                  imageUrl: imageUrl,
-                ),
-              );
-            },
-          ),
+      ),
+      SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        sliver: SliverGrid(
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 250.0, mainAxisSpacing: 16.0, crossAxisSpacing: 16.0, childAspectRatio: 0.85),
+          delegate: SliverChildBuilderDelegate((context, index) {
+            final eventData = events[index];
+            final event = Event.fromJson(eventData as Map<String, dynamic>);
+            return GestureDetector(
+              onTap: () => _openDetailsModal(event, userId),
+              child: EventoCard(title: event.name, date: _formatEventCardDate(event.schedules), imageUrl: event.imageUrl),
+            );
+          }, childCount: events.length),
         ),
-        const SizedBox(height: 24),
-      ],
-    );
+      ),
+    ];
   }
 
-  String _formatDate(String? dateString) {
-    if (dateString == null || dateString.isEmpty) return 'Data não informada';
+  void _openDetailsModal(Event event, String? userId) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+        child: EventDetailsModal(event: event, userId: userId ?? ''),
+      ),
+    ).then((value) { if (value == true) _refreshEvents(); });
+  }
+
+  String _formatEventCardDate(Map<String, dynamic>? schedule) {
+    if (schedule == null || schedule['start'] == null || schedule['end'] == null) return 'Data não informada';
     try {
-      final date = DateTime.parse(dateString);
-      return '${date.day} de ${_monthName(date.month)} - ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}h';
+      final start = DateTime.parse(schedule['start']);
+      final end = DateTime.parse(schedule['end']);
+      final dayFormat = DateFormat('dd \'de\' MMMM', 'pt_BR');
+      final timeFormat = DateFormat('HH:mm', 'pt_BR');
+      if (start.year == end.year && start.month == end.month && start.day == end.day) {
+        return '${dayFormat.format(start)} • ${timeFormat.format(start)} às ${timeFormat.format(end)}h';
+      }
+      return '${DateFormat('dd/MM HH:mm', 'pt_BR').format(start)} até ${DateFormat('dd/MM HH:mm', 'pt_BR').format(end)}';
     } catch (e) {
       return 'Data inválida';
     }
-  }
-
-  String _monthName(int month) {
-    const names = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
-    return names[month - 1];
   }
 }
