@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-// import 'package:http/http.dart' as http; // Descomente para usar http
-// import 'dart:convert'; // Descomente para usar jsonEncode
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class EventCreateModal extends StatefulWidget {
-  const EventCreateModal({super.key});
+  final String userId;
+
+  const EventCreateModal({super.key, required this.userId});
 
   @override
   State<EventCreateModal> createState() => _EventCreateModalState();
@@ -12,8 +14,11 @@ class EventCreateModal extends StatefulWidget {
 
 class _EventCreateModalState extends State<EventCreateModal> {
   final _formKey = GlobalKey<FormState>();
+
+  // Controladores dos campos (sem alteração)
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _imageUrlController = TextEditingController();
   final _addressController = TextEditingController();
   final _cityController = TextEditingController();
   final _stateController = TextEditingController();
@@ -22,15 +27,24 @@ class _EventCreateModalState extends State<EventCreateModal> {
   final _capacityController = TextEditingController();
   final _priceController = TextEditingController();
 
+  // MUDANÇA: A categoria única se torna uma lista de categorias selecionadas
+  List<String> _selectedCategories = [];
   DateTime? _selectedDate;
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
   bool _isSubmitting = false;
 
+  // Lista de categorias disponíveis (sem alteração)
+  final List<String> _categories = const [
+    'Palestra', 'Workshop', 'Evento', 'Tecnologia', 'Música', 'Programação',
+    'Negócios', 'Games', 'Esportes', 'Backend', 'Outro',
+  ];
+
   @override
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
+    _imageUrlController.dispose();
     _addressController.dispose();
     _cityController.dispose();
     _stateController.dispose();
@@ -41,6 +55,7 @@ class _EventCreateModalState extends State<EventCreateModal> {
     super.dispose();
   }
 
+  // Funções _selectDate e _selectTime (sem alteração)
   Future<void> _selectDate(BuildContext context) async {
     final picked = await showDatePicker(
       context: context,
@@ -58,37 +73,42 @@ class _EventCreateModalState extends State<EventCreateModal> {
     );
     if (picked != null) {
       setState(() {
-        if (isStart) {
-          _startTime = picked;
-        } else {
-          _endTime = picked;
-        }
+        if (isStart) _startTime = picked;
+        else _endTime = picked;
       });
     }
   }
 
+  // MUDANÇA: Função de submissão totalmente atualizada para o novo formato JSON
   void _submit() async {
     if (_isSubmitting) return;
 
     if (_formKey.currentState!.validate()) {
-      if (_selectedDate == null || _startTime == null || _endTime == null) {
+      // Validação atualizada para a lista de categorias
+      if (_selectedDate == null || _startTime == null || _endTime == null || _selectedCategories.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Preencha todos os campos de data e horário.')),
+          const SnackBar(content: Text('Por favor, preencha todos os campos obrigatórios, incluindo data, horários e pelo menos uma categoria.')),
         );
         return;
       }
       
       setState(() => _isSubmitting = true);
 
-      // Combina a data e a hora para criar um DateTime completo
       final startDateTime = DateTime(_selectedDate!.year, _selectedDate!.month, _selectedDate!.day, _startTime!.hour, _startTime!.minute);
       final endDateTime = DateTime(_selectedDate!.year, _selectedDate!.month, _selectedDate!.day, _endTime!.hour, _endTime!.minute);
 
+      final imageUrl = _imageUrlController.text.trim().isNotEmpty
+          ? _imageUrlController.text.trim()
+          : 'https://placehold.co/600x400/004AAD/FFFFFF/png?text=Evento';
+
+      // MUDANÇA: Monta o eventData de acordo com a nova estrutura
       final eventData = {
+        'userId': widget.userId, // Chave 'userId'
         'name': _nameController.text.trim(),
         'description': _descriptionController.text.trim(),
-        'type': 'standard',
-        'date': startDateTime.toIso8601String(), // Usando a data/hora de início
+        'categories': _selectedCategories, // Chave 'categories' como uma lista
+        'imageUrl': imageUrl, // Mantido como campo opcional
+        'date': startDateTime.toIso8601String(),
         'location': {
           'address': _addressController.text.trim(),
           'city': _cityController.text.trim(),
@@ -97,68 +117,111 @@ class _EventCreateModalState extends State<EventCreateModal> {
           'additionalInfo': _additionalInfoController.text.trim(),
         },
         'capacity': {
-          'max': int.tryParse(_capacityController.text) ?? 0,
+          'max': int.tryParse(_capacityController.text.trim()) ?? 0,
         },
         'schedules': {
           'start': startDateTime.toIso8601String(),
           'end': endDateTime.toIso8601String(),
         },
-        'inscription': [
-          {
-            'price': double.tryParse(_priceController.text) ?? 0,
-            'type': 'padrão',
-            'discount': 0
-          }
-        ],
-        // ... outros campos que sua API pode precisar
+        // Preço agora é um campo simples no nível principal
+        'inscriptionPrice': double.tryParse(_priceController.text.trim().replaceAll(',', '.')) ?? 0.0,
       };
       
-      // LÓGICA PARA ENVIAR PARA A API (EXEMPLO COMENTADO)
-      /*
       try {
-        final uri = Uri.parse('URL_DA_SUA_API_PARA_CRIAR_EVENTO');
+        final uri = Uri.parse('https://pi2025-1eventpro-production.up.railway.app/api/event');
         final response = await http.post(
           uri,
-          headers: {'Content-Type': 'application/json'},
+          headers: {'Content-Type': 'application/json; charset=UTF-8'},
           body: jsonEncode(eventData),
         );
 
-        if (response.statusCode == 201) { // 201 Created
+        if (!mounted) return;
+
+        if (response.statusCode == 201) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Evento criado com sucesso!')),
+            const SnackBar(backgroundColor: Colors.green, content: Text('Evento criado com sucesso!')),
           );
-          Navigator.of(context).pop(true); // Retorna true para a HomePage
+          Navigator.of(context).pop(true);
         } else {
+          final errorBody = jsonDecode(response.body);
+          final errorMessage = errorBody['message'] ?? 'Ocorreu um erro desconhecido.';
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Falha ao criar evento: ${response.body}')),
+            SnackBar(backgroundColor: Colors.red, content: Text('Falha ao criar evento: $errorMessage (Cód: ${response.statusCode})')),
           );
         }
       } catch (e) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro de conexão: $e')),
+          SnackBar(backgroundColor: Colors.red, content: Text('Erro de conexão: $e')),
         );
       } finally {
-        setState(() => _isSubmitting = false);
+        if (mounted) {
+          setState(() => _isSubmitting = false);
+        }
       }
-      */
-
-      // Lógica atual (apenas imprime e fecha)
-      print('Dados do Evento: $eventData');
-      setState(() => _isSubmitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(backgroundColor: Colors.green, content: Text('Evento criado com sucesso! (Simulação)')),
-      );
-      // Passe 'true' para que a HomePage atualize a lista
-      Navigator.of(context).pop(true);
     }
   }
 
-  InputDecoration _decoration(String label) => InputDecoration(
+  InputDecoration _decoration(String label, {IconData? icon}) => InputDecoration(
     labelText: label,
+    prefixIcon: icon != null ? Icon(icon) : null,
     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
     filled: true,
     fillColor: Colors.grey.shade100,
   );
+
+  // MUDANÇA: Widget para construir os chips de seleção de categoria
+  Widget _buildCategoryChips() {
+    return FormField<List<String>>(
+      initialValue: _selectedCategories,
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Selecione pelo menos uma categoria';
+        }
+        return null;
+      },
+      builder: (formFieldState) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            InputDecorator(
+              decoration: _decoration('Categorias').copyWith(
+                errorText: formFieldState.errorText,
+                contentPadding: const EdgeInsets.all(12),
+              ),
+              child: Wrap(
+                spacing: 8.0,
+                runSpacing: 4.0,
+                children: _categories.map((category) {
+                  final isSelected = _selectedCategories.contains(category);
+                  return FilterChip(
+                    label: Text(category),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      setState(() {
+                        if (selected) {
+                          _selectedCategories.add(category);
+                        } else {
+                          _selectedCategories.remove(category);
+                        }
+                        formFieldState.didChange(_selectedCategories);
+                      });
+                    },
+                    selectedColor: Theme.of(context).primaryColor,
+                    labelStyle: TextStyle(
+                      color: isSelected ? Colors.white : Colors.black,
+                    ),
+                    checkmarkColor: Colors.white,
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -182,10 +245,24 @@ class _EventCreateModalState extends State<EventCreateModal> {
                 ],
               ),
               const SizedBox(height: 24),
+              
               TextFormField(controller: _nameController, decoration: _decoration('Nome do evento'), validator: (v) => (v == null || v.isEmpty) ? 'Campo obrigatório' : null),
               const SizedBox(height: 12),
+              
+              // MUDANÇA: Substituído o Dropdown pelo novo seletor de chips
+              _buildCategoryChips(),
+              const SizedBox(height: 12),
+              
               TextFormField(controller: _descriptionController, maxLines: 3, decoration: _decoration('Descrição'), validator: (v) => (v == null || v.isEmpty) ? 'Campo obrigatório' : null),
               const SizedBox(height: 12),
+
+              TextFormField(controller: _imageUrlController, decoration: _decoration('URL da Imagem (Opcional)', icon: Icons.image), keyboardType: TextInputType.url),
+              const SizedBox(height: 24),
+
+              const Text("Localização", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const Divider(),
+              const SizedBox(height: 12),
+
               TextFormField(controller: _addressController, decoration: _decoration('Endereço'), validator: (v) => (v == null || v.isEmpty) ? 'Campo obrigatório' : null),
               const SizedBox(height: 12),
               Row(
@@ -199,15 +276,22 @@ class _EventCreateModalState extends State<EventCreateModal> {
               TextFormField(controller: _countryController, decoration: _decoration('País'), validator: (v) => (v == null || v.isEmpty) ? 'Campo obrigatório' : null),
               const SizedBox(height: 12),
               TextFormField(controller: _additionalInfoController, decoration: _decoration('Informações adicionais (ex: Sala 101)')),
+              const SizedBox(height: 24),
+
+              const Text("Detalhes do Evento", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const Divider(),
               const SizedBox(height: 12),
+
               Row(
                 children: [
-                   Expanded(child: TextFormField(controller: _capacityController, keyboardType: TextInputType.number, decoration: _decoration('Capacidade'), validator: (v) => (v == null || v.isEmpty || int.tryParse(v) == null) ? 'Número inválido' : null)),
-                   const SizedBox(width: 12),
-                   Expanded(child: TextFormField(controller: _priceController, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: _decoration('Preço (R\$)'))),
+                  Expanded(child: TextFormField(controller: _capacityController, keyboardType: TextInputType.number, decoration: _decoration('Capacidade'), validator: (v) => (v == null || v.isEmpty || int.tryParse(v) == null) ? 'Número inválido' : null)),
+                  const SizedBox(width: 12),
+                  // MUDANÇA: O campo de preço agora se refere ao 'inscriptionPrice'
+                  Expanded(child: TextFormField(controller: _priceController, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: _decoration('Preço Inscrição (R\$)'))),
                 ],
               ),
               const SizedBox(height: 12),
+
               ListTile(
                 title: Text(_selectedDate == null ? 'Selecionar data do evento' : 'Data: ${DateFormat('dd/MM/yyyy').format(_selectedDate!)}'),
                 trailing: const Icon(Icons.calendar_today),
@@ -224,6 +308,7 @@ class _EventCreateModalState extends State<EventCreateModal> {
                 onTap: () => _selectTime(context, false),
               ),
               const SizedBox(height: 24),
+
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF004AAD),
@@ -232,7 +317,9 @@ class _EventCreateModalState extends State<EventCreateModal> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: _submit,
-                child: _isSubmitting ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white)) : const Text('Cadastrar Evento', style: TextStyle(fontSize: 16)),
+                child: _isSubmitting 
+                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3)) 
+                  : const Text('Cadastrar Evento', style: TextStyle(fontSize: 16)),
               ),
             ],
           ),
