@@ -9,6 +9,7 @@ import 'package:eventpro_app/screens/profile_screen.dart';
 import 'package:eventpro_app/screens/search_screen.dart';
 import 'package:eventpro_app/widgets/main_scaffold.dart';
 import 'package:go_router/go_router.dart';
+import 'package:eventpro_app/screens/qr_scanner_screen.dart';
 
 final GoRouter router = GoRouter(
   initialLocation: '/login',
@@ -55,8 +56,11 @@ final GoRouter router = GoRouter(
         ),
         GoRoute(
           path: '/events',
-          name: 'events',
-          builder: (context, state) => const EventScreen(),
+          builder: (context, state) => const EventsScreen(),
+        ),
+        GoRoute(
+          path: '/qr_scanner',
+          builder: (context, state) => const QRScannerScreen(),
         ),
         GoRoute(
           path: '/profile',
