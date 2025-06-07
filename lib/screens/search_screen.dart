@@ -202,6 +202,7 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
+
   Widget _buildFilterChip(String label) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
