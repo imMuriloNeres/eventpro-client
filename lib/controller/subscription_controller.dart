@@ -39,48 +39,50 @@ class SubscriptionController extends ChangeNotifier {
     }
   }
 
-  Future<bool> subscribeToEvent(Event event, String userId) async {
-    if (isSubscribed(event.id) || _isActionInProgress) return false;
+  /// Realiza a inscrição em um novo evento.
+  /// Retorna null em caso de sucesso, ou uma String com a mensagem de erro em caso de falha.
+  Future<String?> subscribeToEvent(Event event, String userId) async {
+    // Retorna uma mensagem específica se o usuário já estiver inscrito.
+    if (isSubscribed(event.id)) {
+      return 'Você já está inscrito neste evento.';
+    }
+    if (_isActionInProgress) {
+      return 'Aguarde, outra operação está em andamento.';
+    }
+    
     _isActionInProgress = true;
     notifyListeners();
 
     try {
       final uri = Uri.parse('https://pi2025-1eventpro-production.up.railway.app/api/inscription');
-
-      // =======================================================
-      // CORREÇÃO APLICADA AQUI: Chave 'event' alterada para 'eventId'
-      // =======================================================
       final body = jsonEncode({'eventId': event.id, 'userId': userId});
-      
-      final headers = {
-        'Content-Type': 'application/json; charset=UTF-8',
-        // 'Authorization': 'Bearer SEU_TOKEN_AQUI', // Adicione se sua API exigir
-      };
-
-      debugPrint("URL da Requisição: $uri");
-      debugPrint("Corpo (Body) Enviado: $body");
+      final headers = {'Content-Type': 'application/json; charset=UTF-8'};
 
       final response = await http.post(uri, headers: headers, body: body);
 
-      debugPrint("Status da Resposta: ${response.statusCode}");
-      debugPrint("Corpo da Resposta: ${response.body}");
-
       if (response.statusCode == 201) {
         await fetchSubscriptions(userId); 
-        return true;
+        return null; // Sucesso
+      } else {
+        // Retorna a mensagem de erro da API ou uma mensagem padrão.
+        final errorBody = jsonDecode(response.body);
+        return errorBody['message'] ?? 'Ocorreu um erro desconhecido.';
       }
-      return false;
     } catch (e) {
-      debugPrint("!! OCORREU UM ERRO NO CATCH: $e");
-      return false;
+      debugPrint("!! OCORREU UM ERRO NO CATCH ao se inscrever: $e");
+      return 'Erro de conexão. Tente novamente.';
     } finally {
       _isActionInProgress = false;
       notifyListeners();
     }
   }
 
-  Future<bool> cancelSubscription(String eventId, String userId) async {
-    if (!isSubscribed(eventId) || _isActionInProgress) return false;
+  /// Cancela uma inscrição existente.
+  /// Retorna null em caso de sucesso, ou uma String com a mensagem de erro em caso de falha.
+  Future<String?> cancelSubscription(String eventId, String userId) async {
+    if (!isSubscribed(eventId)) return 'Você não está inscrito neste evento.';
+    if (_isActionInProgress) return 'Aguarde, outra operação está em andamento.';
+    
     final inscription = _inscriptions.firstWhere((insc) => insc.event.id == eventId);
     
     _isActionInProgress = true;
@@ -91,12 +93,14 @@ class SubscriptionController extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         _inscriptions.removeWhere((insc) => insc.id == inscription.id);
-        return true;
+        return null; // Sucesso
+      } else {
+        final errorBody = jsonDecode(response.body);
+        return errorBody['message'] ?? 'Ocorreu um erro desconhecido.';
       }
-      return false;
     } catch (e) {
       debugPrint("Erro em cancelSubscription: $e");
-      return false;
+      return 'Erro de conexão. Tente novamente.';
     } finally {
       _isActionInProgress = false;
       notifyListeners();

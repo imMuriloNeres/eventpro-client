@@ -8,7 +8,6 @@ import '../controller/subscription_controller.dart';
 import '../screens/search_screen.dart';
 import 'event_create_modal.dart';
 
-// Convertido para StatelessWidget para simplicidade, pois o estado é gerenciado pelo Provider.
 class EventDetailsModal extends StatelessWidget {
   final Event event;
   final String userId;
@@ -33,14 +32,14 @@ class EventDetailsModal extends StatelessWidget {
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Excluir'),
             onPressed: () async {
-              Navigator.of(ctx).pop();
+              Navigator.of(ctx).pop(); // Fecha o diálogo
               final uri = Uri.parse("https://pi2025-1eventpro-production.up.railway.app/api/event/${event.id}");
               final response = await http.delete(uri, headers: {'Content-Type': 'application/json'}, body: jsonEncode({'userId': userId}));
               if (response.statusCode == 200 && context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.green, content: Text('Evento excluído!')));
                 Navigator.of(context).pop(true);
               } else if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.red, content: Text('Falha ao excluir evento.')));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.grey.shade700, content: const Text('Falha ao excluir evento.')));
               }
             },
           ),
@@ -53,8 +52,6 @@ class EventDetailsModal extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (ctx) => EventCreateModal(userId: userId, eventToEdit: event),
     ).then((result) {
       if (result == true) Navigator.of(context).pop(true);
@@ -63,7 +60,6 @@ class EventDetailsModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Usa 'watch' para que a UI se reconstrua quando o estado das inscrições mudar.
     final subscriptionController = context.watch<SubscriptionController>();
     final isUserSubscribed = subscriptionController.isSubscribed(event.id);
 
@@ -118,9 +114,7 @@ class EventDetailsModal extends StatelessWidget {
   }
 
   Widget _buildActionButtons(BuildContext context, bool isUserSubscribed) {
-    // 'read' é usado em callbacks para chamar uma função sem ouvir por mudanças.
     final subscriptionController = context.read<SubscriptionController>();
-    // 'watch' é usado aqui para que apenas o botão se reconstrua com o estado de loading.
     final isLoading = context.watch<SubscriptionController>().isActionInProgress;
 
     if (isOrganizer) {
@@ -138,11 +132,14 @@ class EventDetailsModal extends StatelessWidget {
           icon: const Icon(Icons.cancel_outlined),
           label: const Text('Cancelar Inscrição', style: TextStyle(fontSize: 16)),
           onPressed: isLoading ? null : () async {
-            final success = await subscriptionController.cancelSubscription(event.id, userId);
-            if (success && context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.green, content: Text('Inscrição cancelada.')));
-            } else if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.red, content: Text('Falha ao cancelar inscrição.')));
+            // Lógica de Cancelamento Atualizada
+            final errorMessage = await subscriptionController.cancelSubscription(event.id, userId);
+            if (context.mounted) {
+              if (errorMessage == null) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.green, content: Text('Inscrição cancelada.')));
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.grey.shade700, content: Text(errorMessage)));
+              }
             }
           },
           style: OutlinedButton.styleFrom(
@@ -157,12 +154,14 @@ class EventDetailsModal extends StatelessWidget {
         width: double.infinity,
         child: ElevatedButton(
           onPressed: isLoading ? null : () async {
-            // LÓGICA CORRETA: Chama o controller para fazer a chamada à API.
-            final success = await subscriptionController.subscribeToEvent(event, userId);
-            if (success && context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.green, content: Text('Inscrição realizada com sucesso!')));
-            } else if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.red, content: Text('Falha ao realizar inscrição.')));
+            // Lógica de Inscrição Atualizada
+            final errorMessage = await subscriptionController.subscribeToEvent(event, userId);
+            if (context.mounted) {
+              if (errorMessage == null) { // null significa sucesso
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.green, content: Text('Inscrição realizada com sucesso!')));
+              } else { // Se não for null, é uma mensagem de erro
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.grey.shade700, content: Text(errorMessage)));
+              }
             }
           },
           style: ElevatedButton.styleFrom(
@@ -178,6 +177,7 @@ class EventDetailsModal extends StatelessWidget {
     }
   }
 
+  // --- Widgets Auxiliares (sem alteração) ---
   Widget _buildHeaderImage(BuildContext context) => Stack(children: [ ClipRRect(borderRadius: const BorderRadius.vertical(top: Radius.circular(16)), child: Image.network(event.imageUrl, height: 220, width: double.infinity, fit: BoxFit.cover, errorBuilder: (c, e, s) => Container(height: 220, color: Colors.grey, child: const Icon(Icons.error)))), Positioned(top: 10, right: 10, child: CircleAvatar(backgroundColor: Colors.black.withOpacity(0.5), child: IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: () => Navigator.of(context).pop()))) ]);
   Widget _buildInfoRow(BuildContext context, IconData icon, String title, String content) => Padding(padding: const EdgeInsets.only(bottom: 16.0), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [ Icon(icon, color: Theme.of(context).primaryColor, size: 20), const SizedBox(width: 16), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [ Text(title, style: const TextStyle(fontWeight: FontWeight.bold)), const SizedBox(height: 4), Text(content, style: TextStyle(color: Colors.grey.shade700))])) ]));
   String _formatSchedule(Map<String, dynamic> schedule) { try { final start = DateTime.parse(schedule['start']); final end = DateTime.parse(schedule['end']); return '${DateFormat.yMMMMd('pt_BR').format(start)}, das ${DateFormat.Hm('pt_BR').format(start)} às ${DateFormat.Hm('pt_BR').format(end)}'; } catch (e) { return 'Data não informada'; } }
