@@ -1,4 +1,3 @@
-// lib/controller/signup_controller.dart
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -16,17 +15,17 @@ class SignupController extends ChangeNotifier {
 
   Future<bool> registerUser() async {
     isLoading = true;
-    error = null; // Limpa o erro anterior
+    error = null; 
     notifyListeners();
 
     try {
       final response = await http.post(
         Uri.parse(
-          'https://pi2025-1eventpro-production.up.railway.app/api/auth/register', // CORREÇÃO: Usar a rota de registro da API
+          'https://pi2025-1eventpro-production.up.railway.app/api/auth/register',
         ),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
-          "name": firstName, // Corrigido para 'name' conforme o schema da API
+          "name": firstName,
           "lastname": lastName,
           "dateOfBirth": dateOfBirth?.toIso8601String(),
           "email": email,
