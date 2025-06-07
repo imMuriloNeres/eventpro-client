@@ -39,8 +39,6 @@ class SubscriptionController extends ChangeNotifier {
     }
   }
 
-  /// Realiza a inscrição em um novo evento.
-  /// Retorna null em caso de sucesso, ou uma String com a mensagem de erro em caso de falha.
   Future<String?> subscribeToEvent(Event event, String userId) async {
     // Retorna uma mensagem específica se o usuário já estiver inscrito.
     if (isSubscribed(event.id)) {
@@ -64,7 +62,6 @@ class SubscriptionController extends ChangeNotifier {
         await fetchSubscriptions(userId); 
         return null; // Sucesso
       } else {
-        // Retorna a mensagem de erro da API ou uma mensagem padrão.
         final errorBody = jsonDecode(response.body);
         return errorBody['message'] ?? 'Ocorreu um erro desconhecido.';
       }
@@ -77,8 +74,6 @@ class SubscriptionController extends ChangeNotifier {
     }
   }
 
-  /// Cancela uma inscrição existente.
-  /// Retorna null em caso de sucesso, ou uma String com a mensagem de erro em caso de falha.
   Future<String?> cancelSubscription(String eventId, String userId) async {
     if (!isSubscribed(eventId)) return 'Você não está inscrito neste evento.';
     if (_isActionInProgress) return 'Aguarde, outra operação está em andamento.';

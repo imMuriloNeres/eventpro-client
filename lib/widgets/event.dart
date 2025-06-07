@@ -1,4 +1,3 @@
-// lib/models/event.dart
 import 'package:intl/intl.dart';
 
 class Event {

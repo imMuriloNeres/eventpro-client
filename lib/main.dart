@@ -10,10 +10,8 @@ import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
-  // Ensures that Flutter widgets are initialized first
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initializes date formatting for Brazilian Portuguese
   await initializeDateFormatting('pt_BR', null);
 
   runApp(const MyApp());
@@ -32,10 +30,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => EventsController()),
         ChangeNotifierProvider(create: (_) => SubscriptionController()),
       ],
-      // Consumer is used to access the LoginController and pass it to the AppRouter
       child: Consumer<LoginController>(
         builder: (context, loginController, child) {
-          // Create an instance of AppRouter and get the configured router
           final router = AppRouter(loginController).router;
           
           return MaterialApp.router(

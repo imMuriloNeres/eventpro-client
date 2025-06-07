@@ -70,9 +70,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // =======================================================
-  // CORREÇÃO APLICADA AQUI
-  // =======================================================
   Future<void> _refreshEvents() async {
     await _fetchEvents();
   }

@@ -1,4 +1,3 @@
-// lib/controller/events_controller.dart
 import 'dart:convert';
 import 'package:eventpro_app/models/event_model.dart';
 import 'package:eventpro_app/models/inscription_model.dart';

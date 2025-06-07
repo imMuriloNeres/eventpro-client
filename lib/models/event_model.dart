@@ -1,4 +1,3 @@
-// lib/models/event_model.dart
 class Event {
   final String id;
   final String userId;

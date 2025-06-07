@@ -1,4 +1,3 @@
-// lib/models/user_model.dart
 class User {
   final String? id;
   final String name;
@@ -20,7 +19,6 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      // Handles both 'id' from login response and '_id' from user endpoint response
       id: json['_id'] as String? ?? json['id'] as String?,
       name: json['name'] as String,
       lastname: json['lastname'] as String,

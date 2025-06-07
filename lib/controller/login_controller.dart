@@ -1,18 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import '../models/user_model.dart'; // Ensure you create this file
+import '../models/user_model.dart';
 
 class LoginController extends ChangeNotifier {
   bool isLoading = false;
   String? error;
   User? currentUser;
 
-  /// Returns the ID of the logged-in user, or null if no user is logged in.
   String? get userId => currentUser?.id;
 
-  /// Attempts to log in the user with the provided credentials.
-  /// Returns true on success, false on failure.
   Future<bool> login(String email, String password) async {
     isLoading = true;
     error = null;
@@ -51,8 +48,6 @@ class LoginController extends ChangeNotifier {
       notifyListeners();
     }
   }
-
-  /// Logs out the current user and clears their data.
   void logout() {
     currentUser = null;
     error = null;

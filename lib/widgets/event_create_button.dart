@@ -3,21 +3,20 @@ import 'event_create_modal.dart';
 
 class EventCreateButton extends StatelessWidget {
   final VoidCallback? onEventCreated;
-  final String? userId; // To receive the user ID
+  final String? userId; 
 
   const EventCreateButton({
     super.key,
     this.onEventCreated,
-    required this.userId, // UserID is now required
+    required this.userId, 
   });
 
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton(
-      backgroundColor: const Color(0xFF004AAD), // Mantém o fundo azul
-      foregroundColor: Colors.white,           // ADICIONADO: Define a cor do ícone como branco
+      backgroundColor: const Color(0xFF004AAD), 
+      foregroundColor: Colors.white,          
       onPressed: () async {
-        // Prevent opening modal if userId is not available for some reason.
         if (userId == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(

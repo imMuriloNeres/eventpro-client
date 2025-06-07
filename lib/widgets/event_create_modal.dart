@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import '../screens/search_screen.dart'; // Importe a classe Event
+import '../screens/search_screen.dart'; 
 
 class EventCreateModal extends StatefulWidget {
   final String userId;
-  final Event? eventToEdit; // Parâmetro opcional para o modo de edição
+  final Event? eventToEdit;
 
   const EventCreateModal({super.key, required this.userId, this.eventToEdit});
 
@@ -145,9 +145,6 @@ class _EventCreateModalState extends State<EventCreateModal> {
     try {
       http.Response response;
       if (isEditing) {
-        // ======================================================================
-        // MUDANÇA PRINCIPAL: Usando http.patch em vez de http.put
-        // ======================================================================
         final uri = Uri.parse("https://pi2025-1eventpro-production.up.railway.app/api/event/${widget.eventToEdit!.id}");
         response = await http.patch(uri, headers: {'Content-Type': 'application/json; charset=UTF-8'}, body: jsonEncode(eventData));
       } else {
@@ -172,8 +169,6 @@ class _EventCreateModalState extends State<EventCreateModal> {
     }
   }
 
-  // O resto do arquivo (build, _decoration, _buildCategoryChips, etc.) permanece exatamente o mesmo.
-  // ...
   InputDecoration _decoration(String label, {IconData? icon}) => InputDecoration(labelText: label, prefixIcon: icon != null ? Icon(icon) : null, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)), filled: true, fillColor: Colors.grey.shade100);
 
   Widget _buildCategoryChips() {

@@ -4,14 +4,12 @@ import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
-// Widgets e Controladores
 import '../controller/login_controller.dart';
 import '../widgets/event_create_button.dart';
 import '../widgets/evento_card.dart';
 import '../widgets/filter_chip_widget.dart';
 import '../widgets/event_details_modal.dart';
 
-// Modelo de Dados
 class Event {
   final String id;
   final String organizerId;

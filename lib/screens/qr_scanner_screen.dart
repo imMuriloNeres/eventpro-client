@@ -1,4 +1,3 @@
-// lib/screens/qr_scanner_screen.dart
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:go_router/go_router.dart';

@@ -1,4 +1,3 @@
-// lib/screens/events_screen.dart
 import 'package:eventpro_app/controller/event_controller.dart';
 import 'package:eventpro_app/controller/login_controller.dart';
 import 'package:flutter/material.dart';

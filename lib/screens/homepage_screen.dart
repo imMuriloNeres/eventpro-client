@@ -10,7 +10,7 @@ import '../controller/login_controller.dart';
 import '../widgets/event_create_button.dart';
 import '../widgets/evento_card.dart';
 import '../widgets/event_details_modal.dart';
-import 'search_screen.dart'; // Importa a classe Event para o DetailsModal
+import 'search_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -70,9 +70,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // =======================================================
-  // CORREÇÃO APLICADA AQUI
-  // =======================================================
   Future<void> _refreshEvents() async {
     await _fetchEvents();
   }
@@ -97,7 +94,7 @@ class _HomePageState extends State<HomePage> {
       ),
       floatingActionButton: EventCreateButton(userId: userId, onEventCreated: _refreshEvents),
       body: RefreshIndicator(
-        onRefresh: _refreshEvents, // Agora a função tem a assinatura correta
+        onRefresh: _refreshEvents,
         color: AppColors.bluePrimary,
         child: _buildBody(),
       ),
@@ -141,7 +138,7 @@ class _HomePageState extends State<HomePage> {
             itemBuilder: (context, index) {
               final eventData = events[index];
               final event = Event.fromJson(eventData as Map<String, dynamic>);
-              final cardWidth = MediaQuery.of(context).size.width * 0.7;
+              final cardWidth = (MediaQuery.of(context).size.width * 0.7).clamp(0.0, 300.0);
               return Container(
                 width: cardWidth,
                 margin: EdgeInsets.only(right: index == events.length - 1 ? 0 : 16),
@@ -160,6 +157,10 @@ class _HomePageState extends State<HomePage> {
   List<Widget> _buildVerticalGridSection({required String title, required List<dynamic> events}) {
     if (events.isEmpty) return [const SliverToBoxAdapter(child: SizedBox.shrink())];
     final userId = Provider.of<LoginController>(context, listen: false).userId;
+    
+    final screenWidth = MediaQuery.of(context).size.width;
+    final maxCrossAxisExtent = screenWidth < 400 ? screenWidth : 300.0;
+
     return [
       SliverToBoxAdapter(
         child: Padding(
@@ -170,7 +171,12 @@ class _HomePageState extends State<HomePage> {
       SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         sliver: SliverGrid(
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 250.0, mainAxisSpacing: 16.0, crossAxisSpacing: 16.0, childAspectRatio: 0.85),
+          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: maxCrossAxisExtent,
+            mainAxisSpacing: 16.0,
+            crossAxisSpacing: 16.0,
+            childAspectRatio: 1.0, 
+          ),
           delegate: SliverChildBuilderDelegate((context, index) {
             final eventData = events[index];
             final event = Event.fromJson(eventData as Map<String, dynamic>);
