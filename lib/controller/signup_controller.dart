@@ -1,3 +1,4 @@
+// lib/controller/signup_controller.dart
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -15,16 +16,17 @@ class SignupController extends ChangeNotifier {
 
   Future<bool> registerUser() async {
     isLoading = true;
+    error = null; // Limpa o erro anterior
     notifyListeners();
 
     try {
       final response = await http.post(
         Uri.parse(
-          'https://pi2025-1eventpro-production.up.railway.app/api/user',
+          'https://pi2025-1eventpro-production.up.railway.app/api/auth/register', // CORREÇÃO: Usar a rota de registro da API
         ),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
-          "name": firstName,
+          "name": firstName, // Corrigido para 'name' conforme o schema da API
           "lastname": lastName,
           "dateOfBirth": dateOfBirth?.toIso8601String(),
           "email": email,
@@ -36,8 +38,15 @@ class SignupController extends ChangeNotifier {
 
       if (response.statusCode == 201) {
         return true;
+      } else if (response.statusCode == 400 || response.statusCode == 409) {
+        final Map<String, dynamic> responseBody = json.decode(response.body);
+        error = responseBody['message'] as String? ?? 'Erro ao cadastrar';
+        if (responseBody['errors'] != null) {
+          error = (responseBody['errors'] as List).join(', ');
+        }
+        return false;
       } else {
-        error = 'Erro ao cadastrar: ${response.statusCode}';
+        error = 'Erro ao cadastrar: ${response.statusCode} - ${response.body}';
         return false;
       }
     } catch (e) {

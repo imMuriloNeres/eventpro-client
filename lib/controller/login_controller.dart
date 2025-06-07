@@ -1,10 +1,13 @@
+// lib/controller/login_controller.dart
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:eventpro_app/models/user_model.dart'; // Importar o modelo de usuário
 
 class LoginController extends ChangeNotifier {
   bool isLoading = false;
   String? error;
+  User? currentUser; // Adicionando a propriedade para o usuário logado
 
   Future<bool> login(String email, String password) async {
     isLoading = true;
@@ -13,7 +16,7 @@ class LoginController extends ChangeNotifier {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:3000/api/auth/login'),
+        Uri.parse('https://pi2025-1eventpro-production.up.railway.app/api/auth/login'), // Use a URL da API do Railway
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'email': email,
@@ -22,9 +25,15 @@ class LoginController extends ChangeNotifier {
       ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
+        final Map<String, dynamic> responseBody = json.decode(response.body);
+        currentUser = User.fromJson(responseBody['user']); // Armazena o usuário logado
         return true;
+      } else if (response.statusCode == 404 || response.statusCode == 401) {
+        final Map<String, dynamic> responseBody = json.decode(response.body);
+        error = responseBody['message'] as String? ?? 'Credenciais inválidas'; // Mensagem da API
+        return false;
       } else {
-        error = 'Credenciais inválidas';
+        error = 'Erro desconhecido: ${response.statusCode}';
         return false;
       }
     } catch (e) {
@@ -34,5 +43,10 @@ class LoginController extends ChangeNotifier {
       isLoading = false;
       notifyListeners();
     }
+  }
+
+  void logout() {
+    currentUser = null;
+    notifyListeners();
   }
 }

@@ -1,7 +1,9 @@
+// lib/main.dart
 import 'package:eventpro_app/core/routes/router.dart';
 import 'package:eventpro_app/core/themes/app_theme.dart';
 import 'package:eventpro_app/controller/signup_controller.dart';
 import 'package:eventpro_app/controller/login_controller.dart';
+import 'package:eventpro_app/controller/profile_controller.dart'; // Import the new controller
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -18,6 +20,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => SignupController()),
         ChangeNotifierProvider(create: (_) => LoginController()),
+        ChangeNotifierProvider(create: (_) => ProfileController()), // Add the ProfileController
       ],
       child: MaterialApp.router(
         routerConfig: router,
