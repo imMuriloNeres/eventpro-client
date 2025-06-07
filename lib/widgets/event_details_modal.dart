@@ -45,18 +45,35 @@ class _EventDetailsModalState extends State<EventDetailsModal> {
     });
   }
 
+  // ===================================================================
+  // CORREÇÃO APLICADA AQUI
+  // ===================================================================
   Future<void> _performDelete() async {
     setState(() => _isDeleting = true);
     try {
-      // ===================================================================
-      // CORREÇÃO APLICADA AQUI: Aspas duplas para a interpolação funcionar
-      // ===================================================================
       final uri = Uri.parse("https://pi2025-1eventpro-production.up.railway.app/api/event/${widget.event.id}");
 
-      // Lembre-se de adicionar headers de autenticação se sua API exigir
-      final response = await http.delete(uri);
+      // Passo 1: Preparar o corpo da requisição com o ID do usuário
+      final body = jsonEncode({
+        'userId': widget.userId,
+      });
+
+      // Passo 2: Preparar os headers, indicando que estamos enviando JSON
+      final headers = {
+        'Content-Type': 'application/json; charset=UTF-8',
+        // Lembre-se de adicionar o Token de Autenticação se sua API exigir
+        // 'Authorization': 'Bearer SEU_TOKEN_AQUI',
+      };
+
+      // Passo 3: Enviar a requisição DELETE com headers e body
+      final response = await http.delete(
+        uri,
+        headers: headers,
+        body: body,
+      );
 
       if (!mounted) return;
+
       if (response.statusCode == 200 || response.statusCode == 204) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(backgroundColor: Colors.green, content: Text('Evento excluído com sucesso!')),
@@ -101,8 +118,6 @@ class _EventDetailsModalState extends State<EventDetailsModal> {
     );
   }
 
-  // O resto do arquivo (build, _buildHeaderImage, etc.) permanece o mesmo.
-  // ...
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
